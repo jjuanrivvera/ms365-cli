@@ -30,7 +30,7 @@ have "secrets in OS keyring"             "rg -q 'zalando/go-keyring' go.mod"
 have "MSAL device-code flow"             "rg -lq 'AcquireTokenByDeviceCode' internal/auth"
 have "per-profile MSAL cache accessor"   "rg -lq 'cache.ExportReplace' internal/auth"
 have "encrypted-file keyring fallback"   "rg -lq 'MS365_KEYRING_PASSWORD' internal/auth"
-have "no fmt.Scan secret reads"          "! rg -q 'fmt.Scan' commands internal"
+have "no fmt.Scan secret reads"          "! rg -q 'fmt\\.Scan(ln|f)?\\(' commands internal"
 have "idempotent-only retry"             "rg -lq 'idempotent|MethodGet|MethodPut|MethodDelete' internal/api"
 
 # Meta commands (atomic — one per command)

@@ -44,7 +44,8 @@ func init() {
 	})
 }
 
-const latestReleaseURL = "https://api.github.com/repos/jjuanrivvera/ms365-cli/releases/latest"
+// latestReleaseURL is a var so tests can point --check at an httptest server.
+var latestReleaseURL = "https://api.github.com/repos/jjuanrivvera/ms365-cli/releases/latest"
 
 // reportLatest fetches the newest published release tag and tells the user whether they are
 // up to date. It is best-effort: a network failure is reported, not fatal.

@@ -92,7 +92,7 @@ Use -o json for the complete Graph resource.`,
 			// Structured formats get the full Graph resource; the default view is a
 			// readable letter (headers + text body).
 			if d.gf.outputFormat != "" && d.gf.outputFormat != "table" {
-				return d.render(cmd, json.RawMessage(body), nil)
+				return d.render(cmd, body, nil)
 			}
 			printMessage(cmd, msg)
 			return nil

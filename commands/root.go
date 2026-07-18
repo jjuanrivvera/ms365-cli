@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -47,7 +48,8 @@ type deps struct {
 	store      func() auth.Store
 	// provider builds the auth provider for a profile; tests inject fakes.
 	provider func(clientID, authority, profile string, scopes []string) auth.Provider
-	out      *os.File
+	// out overrides where dry-run curls go (tests capture it; default os.Stdout).
+	out io.Writer
 }
 
 func newDeps() *deps {
@@ -184,7 +186,7 @@ func (d *deps) getAPIClient() (*api.Client, *config.Config, error) {
 	c := api.New(baseURL, func(ctx context.Context) (string, error) {
 		tok, err := provider.TokenSilent(ctx)
 		if err != nil {
-			return "", fmt.Errorf("no valid token for account %q: %w", profileName, err)
+			return "", fmt.Errorf("no valid token for account %q — run `ms365 auth login -a %s` (%w)", profileName, profileName, err)
 		}
 		return tok.AccessToken, nil
 	},
@@ -197,7 +199,7 @@ func (d *deps) getAPIClient() (*api.Client, *config.Config, error) {
 	return c, cfg, nil
 }
 
-func (d *deps) stdout() *os.File {
+func (d *deps) stdout() io.Writer {
 	if d.out != nil {
 		return d.out
 	}
@@ -215,12 +217,15 @@ func (d *deps) render(cmd *cobra.Command, v any, defaultColumns []string) error 
 		}
 		raw = b
 	}
+	format := output.Format(config.FirstNonEmpty(d.gf.outputFormat, string(output.FormatTable)))
 	cols := normalizeColumns(d.gf.columns)
-	if len(cols) == 0 {
+	if len(cols) == 0 && format != output.FormatID {
+		// Default columns shape tables/CSV; `-o id` must keep its id-picking heuristic
+		// (the default column list rarely leads with id).
 		cols = defaultColumns
 	}
 	return output.Render(raw, output.Options{
-		Format:  output.Format(config.FirstNonEmpty(d.gf.outputFormat, string(output.FormatTable))),
+		Format:  format,
 		Columns: cols,
 		NoColor: d.gf.noColor,
 		Quiet:   d.gf.quiet,

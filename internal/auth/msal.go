@@ -117,11 +117,17 @@ func (p *MSALProvider) Logout(ctx context.Context) error {
 }
 
 func tokenFromResult(res public.AuthResult) Token {
+	// The ID token's tid is the account's REAL tenant; Account.Realm echoes the authority
+	// tenant, which is the literal "common" for multi-tenant sign-in.
+	tenant := res.IDToken.TenantID
+	if tenant == "" {
+		tenant = res.Account.Realm
+	}
 	return Token{
 		AccessToken: res.AccessToken,
 		ExpiresOn:   res.ExpiresOn,
 		Scopes:      res.GrantedScopes,
 		Username:    res.Account.PreferredUsername,
-		TenantID:    res.Account.Realm,
+		TenantID:    tenant,
 	}
 }

@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"encoding/json"
-
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +28,7 @@ func init() {
 				if d.gf.dryRun {
 					return nil
 				}
-				return d.render(cmd, json.RawMessage(body), meColumns)
+				return d.render(cmd, body, meColumns)
 			},
 		}
 		return annotate(cmd, kindRead)
