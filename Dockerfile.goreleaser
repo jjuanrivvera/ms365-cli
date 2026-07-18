@@ -1,0 +1,6 @@
+# Minimal runtime image for the prebuilt (static, CGO_ENABLED=0) binary that GoReleaser drops
+# into the build context. Distroless keeps the image tiny and the attack surface small.
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY ms365 /usr/bin/ms365
+ENTRYPOINT ["/usr/bin/ms365"]
+CMD ["--help"]

@@ -1,0 +1,37 @@
+{
+  "api": "Microsoft 365 (Microsoft Graph v1.0)",
+  "binary": "ms365",
+  "base_url": "https://graph.microsoft.com/v1.0",
+  "docs_url": "https://learn.microsoft.com/en-us/graph/api/overview",
+  "profile_flag": "account",
+  "profile_noun": "account",
+  "api_method_total": 16643,
+  "api_method_source": "microsoftgraph/msgraph-metadata openapi/v1.0/openapi.yaml — operationId count (grep -c 'operationId:'), fetched 2026-07-18",
+  "coverage_note": "v1 ships the delegated read-only mail/calendar/identity surface; see the coverage-waiver in DECISIONS.md",
+  "resources": [
+    {
+      "name": "mail",
+      "endpoints": ["GET /me/messages", "GET /me/mailFolders/{folder}/messages", "GET /me/messages/{id}"],
+      "verbs": ["list", "get"],
+      "read_only": true,
+      "scope": "Mail.Read",
+      "fields": ["id", "subject", "from", "toRecipients", "receivedDateTime", "isRead", "hasAttachments", "bodyPreview", "body", "webLink"]
+    },
+    {
+      "name": "calendar",
+      "endpoints": ["GET /me/calendarView", "GET /me/events"],
+      "verbs": ["events", "list"],
+      "read_only": true,
+      "scope": "Calendars.Read",
+      "fields": ["id", "subject", "start", "end", "location", "organizer", "isAllDay", "isCancelled", "onlineMeetingUrl"]
+    },
+    {
+      "name": "me",
+      "endpoints": ["GET /me"],
+      "verbs": [],
+      "read_only": true,
+      "scope": "User.Read",
+      "fields": ["id", "displayName", "userPrincipalName", "mail", "jobTitle", "officeLocation", "mobilePhone", "businessPhones"]
+    }
+  ]
+}

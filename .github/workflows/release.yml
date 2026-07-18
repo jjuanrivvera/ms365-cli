@@ -1,0 +1,13 @@
+# Release — delegates to the fleet-canonical reusable release workflow in jjuanrivvera/.github.
+# Change release-pipeline policy there, not here. The .goreleaser.yaml config stays per-repo.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  release:
+    uses: jjuanrivvera/.github/.github/workflows/go-release.yml@main
+    secrets: inherit

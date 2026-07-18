@@ -1,0 +1,20 @@
+site_name: ms365
+site_description: A fast, scriptable CLI for Microsoft 365 via Microsoft Graph
+site_url: https://jjuanrivvera.github.io/ms365-cli/
+repo_url: https://github.com/jjuanrivvera/ms365-cli
+repo_name: jjuanrivvera/ms365-cli
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      toggle: { icon: material/brightness-7, name: Dark mode }
+    - scheme: slate
+      primary: indigo
+      toggle: { icon: material/brightness-4, name: Light mode }
+  features: [navigation.sections, content.code.copy]
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Command reference: commands/ms365.md
+markdown_extensions: [admonition, pymdownx.superfences, pymdownx.highlight]
