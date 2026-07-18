@@ -10,4 +10,6 @@ on:
 jobs:
   release:
     uses: jjuanrivvera/.github/.github/workflows/go-release.yml@main
+    with:
+      promote-main: true
     secrets: inherit

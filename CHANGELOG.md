@@ -6,6 +6,8 @@ All notable changes to this project are documented in this file. The format foll
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-07-18
+
 ### Added
 - **Write surface (v2)** — the default sign-in stays read-only; grant write scopes per
   account with `auth login --scopes …`:
