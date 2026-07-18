@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -56,3 +57,23 @@ type Provider interface {
 // ProfileKey is the keyring entry name for a profile's serialized MSAL token cache
 // (service "ms365-cli", key "profile-<name>").
 func ProfileKey(profile string) string { return "profile-" + profile }
+
+// HasScope reports whether granted contains scope. Comparison is case-insensitive and
+// tolerates resource-URI-prefixed values ("https://graph.microsoft.com/Mail.Send") because
+// Entra sometimes returns fully-qualified scope strings. An EMPTY granted list means the
+// provider surfaced no scope metadata — report true and let Graph enforce (a fail-open
+// pre-check must never block a token whose grants we simply cannot see).
+func HasScope(granted []string, scope string) bool {
+	if len(granted) == 0 {
+		return true
+	}
+	for _, g := range granted {
+		if i := strings.LastIndex(g, "/"); i >= 0 {
+			g = g[i+1:]
+		}
+		if strings.EqualFold(g, scope) {
+			return true
+		}
+	}
+	return false
+}

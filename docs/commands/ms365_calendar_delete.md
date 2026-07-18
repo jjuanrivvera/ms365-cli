@@ -1,11 +1,32 @@
-## ms365 mail
+## ms365 calendar delete
 
-Read Outlook mail (Mail.Read)
+Delete a calendar event (Calendars.ReadWrite)
+
+### Synopsis
+
+DELETE /me/events/{id}. Attendees receive a cancellation when you organize the
+event. Irreversible — the command asks for confirmation unless --yes is passed.
+
+Deleting events needs the Calendars.ReadWrite delegated scope — grant it once per
+account with:
+  ms365 auth login -a <account> --scopes Calendars.ReadWrite
+
+```
+ms365 calendar delete <event-id> [flags]
+```
+
+### Examples
+
+```
+  ms365 calendar delete AAMkAGI2… --yes
+  ms365 calendar list --filter "subject eq 'Old sync'" -o id | xargs -I{} ms365 calendar delete {} --yes
+```
 
 ### Options
 
 ```
-  -h, --help   help for mail
+  -h, --help   help for delete
+      --yes    skip the confirmation prompt
 ```
 
 ### Options inherited from parent commands
@@ -29,9 +50,5 @@ Read Outlook mail (Mail.Read)
 
 ### SEE ALSO
 
-* [ms365](ms365.md)	 - A fast, scriptable CLI for Microsoft 365 (Microsoft Graph)
-* [ms365 mail get](ms365_mail_get.md)	 - Show one message with its body as text
-* [ms365 mail list](ms365_mail_list.md)	 - List messages
-* [ms365 mail reply](ms365_mail_reply.md)	 - Reply to a message (Mail.Send)
-* [ms365 mail send](ms365_mail_send.md)	 - Send an email (Mail.Send)
+* [ms365 calendar](ms365_calendar.md)	 - Read your Outlook calendar (Calendars.Read)
 

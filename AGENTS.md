@@ -1,8 +1,9 @@
 # AGENTS.md — working in the ms365-cli repo
 
 `ms365` is a command-line tool for **Microsoft 365** via the **Microsoft Graph API v1.0**
-(delegated, read-only surface: mail, calendar, identity), built to the cliwright standard
-(Go + Cobra + GoReleaser). This file orients an AI agent (or human) contributing.
+(delegated mail/calendar/identity surface — reads plus the v2 writes: send/reply mail,
+create/update/delete events), built to the cliwright standard (Go + Cobra + GoReleaser).
+This file orients an AI agent (or human) contributing.
 
 ## The one rule that matters
 **`make verify` is the gate.** A change is done only when `make verify` exits `0`. It runs
@@ -17,8 +18,9 @@ the command surface or a documented behavior — not just `make check`.
   retry honoring `Retry-After` (delta-seconds + HTTP-date) with full-jitter backoff,
   `@odata.nextLink` pagination (`--all`/`--limit`, page cap, same-host guard), dry-run curl
   with token redaction, `APIError` with actionable hints, and typed service methods
-  (`MailList`, `MailGet`, `CalendarView`, `EventsList`, `Me`). Pattern B (service-layer) —
-  see DECISIONS.md #6 for the trigger.
+  (`MailList`, `MailGet`, `MailSend`, `MailReply`, `CalendarView`, `EventsList`,
+  `EventCreate`, `EventUpdate`, `EventDelete`, `Me`). Pattern B (service-layer) — see
+  DECISIONS.md #6 for the trigger.
 - `internal/auth/` — MSAL device-code auth behind the `Provider` interface (fakeable in
   tests): per-profile token caches serialized via a `cache.ExportReplace` accessor into the
   OS keyring (service `ms365-cli`, key `profile-<name>`), AES-256-GCM encrypted-file
@@ -36,7 +38,9 @@ the command surface or a documented behavior — not just `make check`.
 ## Graph specifics you must not re-derive
 - Auth is the device-code flow against `https://login.microsoftonline.com/common`; scopes
   are the `auth.DefaultScopes` constant (`User.Read Mail.Read Calendars.Read`). NO client
-  secret exists anywhere.
+  secret exists anywhere. **DefaultScopes stay read-only** — write commands need a
+  per-account grant (`auth login --scopes Mail.Send` / `Calendars.ReadWrite`) and
+  pre-check the cached token's grant with the exact re-login hint (DECISIONS.md #18).
 - Profiles NEVER cross: `-a personal` and `-a work` each own a keyring entry.
 - Pagination is `@odata.nextLink` (absolute URL — follow only on the same host).
 - `$search` on messages is KQL, must be quoted, and cannot combine with `$filter`/`$orderby`

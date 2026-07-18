@@ -1,8 +1,8 @@
 # ms365 — Microsoft 365 from your terminal
 
-A fast, scriptable CLI for **Microsoft 365** via the **Microsoft Graph API**: read your
-Outlook mail, browse your calendar, and inspect your profile — with named accounts so a
-personal Outlook.com sign-in and a work/school tenant live side by side and never share
+A fast, scriptable CLI for **Microsoft 365** via the **Microsoft Graph API**: read and
+send Outlook mail, manage your calendar, and inspect your profile — with named accounts so
+a personal Outlook.com sign-in and a work/school tenant live side by side and never share
 tokens.
 
 - **Device-code sign-in** (MSAL, public client — no secrets): `ms365 auth login`, finish in
@@ -60,6 +60,18 @@ ms365 mail get <message-id>
 ms365 calendar events
 ms365 calendar events --from 2026-07-20 --to 2026-07-27 --timezone "America/Caracas"
 
+# Send & reply (needs the Mail.Send scope — see Authentication notes)
+ms365 auth login -a personal --scopes Mail.Send
+ms365 mail send --to ana@example.com --subject "Lunch?" --body "12:30 at the usual place"
+ms365 mail reply <message-id> --all --body "Works for me."
+
+# Manage events (needs Calendars.ReadWrite)
+ms365 auth login -a work --scopes Calendars.ReadWrite
+ms365 calendar create --subject "1:1 Ana" --from 2026-07-21T10:00 --to 2026-07-21T10:30 \
+  --timezone "America/Caracas" --attendee ana@example.com --online-meeting
+ms365 calendar update <event-id> --location "Room 3"
+ms365 calendar delete <event-id> --yes
+
 # A second account, side by side
 ms365 auth login -a work
 ms365 mail list -a work
@@ -77,6 +89,11 @@ ms365 api GET me/drive/root/children
 - Sign-in uses the **OAuth device-code flow** with the Microsoft Graph Command Line Tools
   first-party client ID (the same app `Connect-MgGraph` uses). Requested delegated scopes:
   `User.Read Mail.Read Calendars.Read`.
+- **The default sign-in is read-only.** Write commands need extra delegated scopes, granted
+  per account at login: `mail send` / `mail reply` need `Mail.Send`, and
+  `calendar create/update/delete` need `Calendars.ReadWrite`:
+  `ms365 auth login -a <account> --scopes Mail.Send,Calendars.ReadWrite`. If a write
+  command fails with a scope hint, re-run login with the scope it names.
 - Tokens (MSAL cache incl. refresh tokens) live in the **OS keyring**, one entry per
   account. Headless Linux without a Secret Service falls back to an AES-256-GCM encrypted
   file — set `MS365_KEYRING_PASSWORD` for a real key.

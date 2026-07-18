@@ -90,19 +90,23 @@ func newRootCmd(d *deps) *cobra.Command {
 	root := &cobra.Command{
 		Use:   "ms365",
 		Short: "A fast, scriptable CLI for Microsoft 365 (Microsoft Graph)",
-		Long: `ms365 drives Microsoft 365 from the terminal via the Microsoft Graph API: read your
-mail, browse your calendar, and inspect your profile — with named accounts so a personal
-Outlook.com sign-in and a work/school tenant live side by side and never cross tokens.
+		Long: `ms365 drives Microsoft 365 from the terminal via the Microsoft Graph API: read and
+send mail, manage your calendar, and inspect your profile — with named accounts so a
+personal Outlook.com sign-in and a work/school tenant live side by side and never cross
+tokens.
 
 Sign-in is the OAuth device-code flow (no secrets stored beyond MSAL's refresh tokens,
-which live in your OS keyring).
+which live in your OS keyring). The default sign-in is read-only; write commands tell you
+the extra scope to grant (e.g. ` + "`auth login --scopes Mail.Send`" + `).
 
 Examples:
   ms365 auth login -a personal
   ms365 mail list -a personal --top 20
   ms365 mail list --folder inbox --search "invoice"
   ms365 mail get <message-id>
+  ms365 mail send --to ana@example.com --subject "Lunch?" --body "12:30?"
   ms365 calendar events --from 2026-07-20 --to 2026-07-27
+  ms365 calendar create --subject "1:1" --from 2026-07-21T10:00 --to 2026-07-21T10:30
   ms365 me -o json`,
 		SilenceUsage:  true,
 		SilenceErrors: true,
@@ -170,6 +174,15 @@ func (d *deps) resolveClientID(cfg *config.Config, profileName string) string {
 // getAPIClient builds an authenticated Graph client for the ACTIVE profile, honoring
 // flag > env > config precedence for every knob.
 func (d *deps) getAPIClient() (*api.Client, *config.Config, error) {
+	return d.getAPIClientScoped("")
+}
+
+// getAPIClientScoped is getAPIClient plus a delegated-scope pre-check for write commands:
+// DefaultScopes stay read-only by design (DECISIONS.md #5/#18), so a token minted by a
+// plain `auth login` lacks Mail.Send / Calendars.ReadWrite. Checking the cached grant here
+// turns Graph's opaque 403 into the exact re-login command the user needs. The check runs
+// inside the TokenFunc — which --dry-run never invokes — so dry-run keeps working unsigned.
+func (d *deps) getAPIClientScoped(scope string) (*api.Client, *config.Config, error) {
 	profileName, cfg, err := d.resolveProfile()
 	if err != nil {
 		return nil, nil, err
@@ -187,6 +200,9 @@ func (d *deps) getAPIClient() (*api.Client, *config.Config, error) {
 		tok, err := provider.TokenSilent(ctx)
 		if err != nil {
 			return "", fmt.Errorf("no valid token for account %q — run `ms365 auth login -a %s` (%w)", profileName, profileName, err)
+		}
+		if scope != "" && !auth.HasScope(tok.Scopes, scope) {
+			return "", fmt.Errorf("account %q is signed in without the %s scope — run: ms365 auth login -a %s --scopes %s", profileName, scope, profileName, scope)
 		}
 		return tok.AccessToken, nil
 	},

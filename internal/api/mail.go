@@ -107,6 +107,78 @@ func (c *Client) MailGet(ctx context.Context, id string, asText bool) (*Message,
 	return &m, body, nil
 }
 
+// MailSendOptions describe one outgoing message for /me/sendMail.
+type MailSendOptions struct {
+	To, Cc, Bcc []string
+	Subject     string
+	Body        string
+	HTML        bool // body contentType: html instead of text
+	SaveToSent  bool // Graph's saveToSentItems
+}
+
+// MailSend POSTs /me/sendMail (fire-and-forget: Graph queues the message and returns 202
+// with no body, so there is nothing to render on success).
+func (c *Client) MailSend(ctx context.Context, opts MailSendOptions) error {
+	if len(opts.To) == 0 {
+		return fmt.Errorf("at least one --to recipient is required")
+	}
+	for _, lst := range [][]string{opts.To, opts.Cc, opts.Bcc} {
+		for _, a := range lst {
+			if !strings.Contains(a, "@") {
+				return fmt.Errorf("invalid recipient %q (want an email address)", a)
+			}
+		}
+	}
+	contentType := "text"
+	if opts.HTML {
+		contentType = "html"
+	}
+	msg := map[string]any{
+		"subject":      opts.Subject,
+		"body":         map[string]string{"contentType": contentType, "content": opts.Body},
+		"toRecipients": recipients(opts.To),
+	}
+	if len(opts.Cc) > 0 {
+		msg["ccRecipients"] = recipients(opts.Cc)
+	}
+	if len(opts.Bcc) > 0 {
+		msg["bccRecipients"] = recipients(opts.Bcc)
+	}
+	body, err := json.Marshal(map[string]any{"message": msg, "saveToSentItems": opts.SaveToSent})
+	if err != nil {
+		return err
+	}
+	_, _, _, err = c.Do(ctx, "POST", "me/sendMail", nil, body, nil)
+	return err
+}
+
+// MailReply POSTs /me/messages/{id}/reply (or /replyAll when all is true). Exchange builds
+// the quoted thread server-side; comment is prepended as the reply text.
+func (c *Client) MailReply(ctx context.Context, id, comment string, all bool) error {
+	if err := validateIDSegment(id); err != nil {
+		return fmt.Errorf("invalid message id: %w", err)
+	}
+	action := "reply"
+	if all {
+		action = "replyAll"
+	}
+	body, err := json.Marshal(map[string]string{"comment": comment})
+	if err != nil {
+		return err
+	}
+	_, _, _, err = c.Do(ctx, "POST", "me/messages/"+url.PathEscape(id)+"/"+action, nil, body, nil)
+	return err
+}
+
+// recipients wraps plain addresses in Graph's recipient envelope.
+func recipients(addrs []string) []map[string]any {
+	out := make([]map[string]any, 0, len(addrs))
+	for _, a := range addrs {
+		out = append(out, map[string]any{"emailAddress": map[string]string{"address": strings.TrimSpace(a)}})
+	}
+	return out
+}
+
 // validateIDSegment rejects values that would break out of the URL path segment (Graph ids
 // are base64url-ish and never contain slashes).
 func validateIDSegment(id string) error {

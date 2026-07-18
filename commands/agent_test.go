@@ -48,9 +48,10 @@ func kindAnnotated(ann map[string]string) string {
 	return ""
 }
 
-// TestClassifyAPICommands locks the read/write/destructive split: the whole shipped API
-// surface is read-only; nothing may classify as destructive (the raw `api` escape hatch is
-// gated separately by HTTP method).
+// TestClassifyAPICommands locks the read/write/destructive split of the v2 surface:
+// reads allow, reversible writes (reply, event create/update) ask, and the irreversible
+// ops (mail send — no unsend; calendar delete) hard-block. The raw `api` escape hatch is
+// gated separately by HTTP method.
 func TestClassifyAPICommands(t *testing.T) {
 	cls := classifyAPICommands(false)
 
@@ -66,8 +67,8 @@ func TestClassifyAPICommands(t *testing.T) {
 	for _, want := range []string{"mail list", "mail get", "calendar events", "calendar list", "me"} {
 		assert.Contains(t, reads, want, "must be read-only")
 	}
-	assert.Empty(t, writes, "no first-class write commands ship in v1")
-	assert.Empty(t, destr, "no destructive commands ship in v1")
+	assert.ElementsMatch(t, []string{"mail reply", "calendar create", "calendar update"}, writes)
+	assert.ElementsMatch(t, []string{"mail send", "calendar delete"}, destr)
 
 	// A destructive path must never also classify as read (verb-name collision guard).
 	for _, r := range reads {
@@ -75,12 +76,18 @@ func TestClassifyAPICommands(t *testing.T) {
 	}
 }
 
-// TestClassify_AllWritesPromotes verifies --all-writes finds nothing to promote today —
-// and that classification stays stable when it does.
+// TestClassify_AllWritesPromotes verifies --all-writes moves every ordinary write into the
+// hard-block bucket alongside the always-destructive ops.
 func TestClassify_AllWritesPromotes(t *testing.T) {
 	cls := classifyAPICommands(true)
 	assert.Empty(t, cls.Write)
-	assert.Empty(t, cls.Destructive)
+	var destr []string
+	for _, c := range cls.Destructive {
+		destr = append(destr, c.Path)
+	}
+	assert.ElementsMatch(t,
+		[]string{"mail send", "mail reply", "calendar create", "calendar update", "calendar delete"},
+		destr)
 }
 
 // TestAliasCrossProduct locks §3b hardening #5: alias paths are enumerated.
@@ -140,6 +147,13 @@ func TestMCPExcludesSetupCommands(t *testing.T) {
 	assert.True(t, includedSeen["ms365 mail list"])
 	assert.True(t, includedSeen["ms365 calendar events"])
 	assert.True(t, includedSeen["ms365 me"])
+	// Write tools ARE exposed — the annotations (readOnlyHint=false, destructiveHint) let
+	// the host gate them; exclusion is only for meta/setup surfaces.
+	assert.True(t, includedSeen["ms365 mail send"])
+	assert.True(t, includedSeen["ms365 mail reply"])
+	assert.True(t, includedSeen["ms365 calendar create"])
+	assert.True(t, includedSeen["ms365 calendar update"])
+	assert.True(t, includedSeen["ms365 calendar delete"])
 }
 
 // TestGuardRenderers smoke-checks each host output for the load-bearing content.
@@ -152,7 +166,13 @@ func TestGuardRenderers(t *testing.T) {
 	assert.Contains(t, claude, `Bash(ms365 api POST:*)`)
 	assert.Contains(t, claude, `Bash(ms365 alias set:*)`)
 	assert.Contains(t, claude, `Bash(ms365 mail list:*)`)
+	assert.Contains(t, claude, `Bash(ms365 mail send:*)`, "irreversible send must be denied")
+	assert.Contains(t, claude, `Bash(ms365 messages send:*)`, "alias path must be denied too")
+	assert.Contains(t, claude, `Bash(ms365 calendar delete:*)`)
+	assert.Contains(t, claude, `Bash(ms365 mail reply:*)`, "writes go in the ask bucket")
 	assert.Contains(t, claude, "mcp__ms365__ms365_mail_list")
+	assert.Contains(t, claude, "mcp__ms365__ms365_mail_send")
+	assert.Contains(t, claude, "mcp__ms365__ms365_calendar_delete")
 	assert.Contains(t, claude, "PreToolUse")
 	assert.Contains(t, claude, "blocked_cmds=(")
 
@@ -168,6 +188,10 @@ func TestGuardRenderers(t *testing.T) {
 	assert.Contains(t, oc, `"ms365 api DELETE*": "deny"`)
 	assert.Contains(t, oc, `"ms365 alias set*": "deny"`)
 	assert.Contains(t, oc, `"ms365 mail list*": "allow"`)
+	assert.Contains(t, oc, `"ms365 mail send*": "deny"`)
+	assert.Contains(t, oc, `"ms365 cal delete*": "deny"`)
+	assert.Contains(t, oc, `"ms365 mail reply*": "ask"`)
+	assert.Contains(t, oc, `"ms365 calendar create*": "ask"`)
 }
 
 // TestGuardCommand_HostsAndWrite runs the actual cobra command per host, including the

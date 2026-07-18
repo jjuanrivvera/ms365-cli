@@ -12,10 +12,10 @@ import (
 )
 
 // TestHookScript_BashExecution exercises the generated hook script with real bash to verify
-// the adversarial cases: obfuscation, path-invoked binaries, the raw api escape hatch, and
-// the benign lookalikes that must stay allowed. The shipped ms365 surface is read-only, so
-// the blocked Bash set is `alias set` plus the api METHOD gate — exactly what the cases
-// cover. Gated on a POSIX shell being available so it is safe in the regular suite.
+// the adversarial cases: obfuscation, path-invoked binaries, the raw api escape hatch, the
+// irreversible first-class writes (mail send, calendar delete — canonical AND alias paths),
+// and the benign lookalikes that must stay allowed. Gated on a POSIX shell being available
+// so it is safe in the regular suite.
 func TestHookScript_BashExecution(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("bash hook tests require a POSIX shell; skipping on windows")
@@ -71,7 +71,15 @@ func TestHookScript_BashExecution(t *testing.T) {
 		payload    string
 		wantDenied bool
 	}{
-		// --- alias minting (the one blocked CLI path on a read-only surface) ---
+		// --- irreversible first-class writes (canonical + cobra alias paths) ---
+		{"mail_send_denied", bashPayload(`ms365 mail send --to a@x.com --subject hi --body yo`), true},
+		{"messages_send_alias_denied", bashPayload(`ms365 messages send --to a@x.com --body yo`), true},
+		{"calendar_delete_denied", bashPayload("ms365 calendar delete AAMk123 --yes"), true},
+		{"cal_delete_alias_denied", bashPayload("ms365 cal delete AAMk123 --yes"), true},
+		// --- reversible writes stay out of the hard-block set (host asks instead) ---
+		{"mail_reply_allowed_by_hook", bashPayload(`ms365 mail reply AAMk123 --body ok`), false},
+		{"calendar_create_allowed_by_hook", bashPayload(`ms365 calendar create --subject x --from 2026-07-21T10:00 --to 2026-07-21T11:00`), false},
+		// --- alias minting ---
 		{"alias_set_denied", bashPayload(`ms365 alias set kill "api DELETE me/messages/1"`), true},
 		// --- obfuscation ---
 		{"quote_split_denied", bashPayload(`ms365 alias s""et kill "x"`), true},
@@ -111,10 +119,13 @@ func TestHookScript_BashExecution(t *testing.T) {
 		{"other_binary_allowed", bashPayload("myms365 alias set kill x"), false},
 		{"other_binary_api_allowed", bashPayload("myms365 api DELETE me/messages/m1"), false},
 		{"cal_alias_events_allowed", bashPayload("ms365 cal events"), false},
-		// --- MCP branch: read tools allowed; near-misses stay allowed ---
+		// --- MCP branch: read tools allowed; irreversible tools denied (exact names) ---
 		{"mcp_mail_list_allowed", mcpPayload("mcp__ms365__ms365_mail_list"), false},
 		{"mcp_calendar_events_allowed", mcpPayload("mcp__ms365__ms365_calendar_events"), false},
 		{"mcp_near_miss_allowed", mcpPayload("mcp__ms365__ms365_mail_list2"), false},
+		{"mcp_mail_send_denied", mcpPayload("mcp__ms365__ms365_mail_send"), true},
+		{"mcp_calendar_delete_denied", mcpPayload("mcp__ms365__ms365_calendar_delete"), true},
+		{"mcp_mail_reply_allowed", mcpPayload("mcp__ms365__ms365_mail_reply"), false},
 	}
 
 	for _, tc := range cases {

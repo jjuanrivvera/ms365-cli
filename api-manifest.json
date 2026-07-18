@@ -7,23 +7,23 @@
   "profile_noun": "account",
   "api_method_total": 16643,
   "api_method_source": "microsoftgraph/msgraph-metadata openapi/v1.0/openapi.yaml — operationId count (grep -c 'operationId:'), fetched 2026-07-18",
-  "coverage_note": "v1 ships the delegated read-only mail/calendar/identity surface; see the coverage-waiver in DECISIONS.md",
+  "coverage_note": "v2 ships the delegated mail/calendar/identity surface incl. writes (sendMail, reply/replyAll, event create/update/delete); see the coverage-waiver in DECISIONS.md",
   "resources": [
     {
       "name": "mail",
-      "endpoints": ["GET /me/messages", "GET /me/mailFolders/{folder}/messages", "GET /me/messages/{id}"],
-      "verbs": ["list", "get"],
-      "read_only": true,
-      "scope": "Mail.Read",
-      "fields": ["id", "subject", "from", "toRecipients", "receivedDateTime", "isRead", "hasAttachments", "bodyPreview", "body", "webLink"]
+      "endpoints": ["GET /me/messages", "GET /me/mailFolders/{folder}/messages", "GET /me/messages/{id}", "POST /me/sendMail", "POST /me/messages/{id}/reply", "POST /me/messages/{id}/replyAll"],
+      "verbs": ["list", "get", "send", "reply"],
+      "read_only": false,
+      "scope": "Mail.Read (reads), Mail.Send (send/reply)",
+      "fields": ["id", "subject", "from", "toRecipients", "ccRecipients", "bccRecipients", "receivedDateTime", "isRead", "hasAttachments", "bodyPreview", "body", "webLink"]
     },
     {
       "name": "calendar",
-      "endpoints": ["GET /me/calendarView", "GET /me/events"],
-      "verbs": ["events", "list"],
-      "read_only": true,
-      "scope": "Calendars.Read",
-      "fields": ["id", "subject", "start", "end", "location", "organizer", "isAllDay", "isCancelled", "onlineMeetingUrl"]
+      "endpoints": ["GET /me/calendarView", "GET /me/events", "POST /me/events", "PATCH /me/events/{id}", "DELETE /me/events/{id}"],
+      "verbs": ["events", "list", "create", "update", "delete"],
+      "read_only": false,
+      "scope": "Calendars.Read (reads), Calendars.ReadWrite (create/update/delete)",
+      "fields": ["id", "subject", "start", "end", "location", "organizer", "attendees", "body", "isAllDay", "isCancelled", "isOnlineMeeting", "onlineMeetingUrl"]
     },
     {
       "name": "me",

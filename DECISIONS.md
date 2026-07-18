@@ -36,11 +36,12 @@ never silently re-decide (cliwright GOAL.md §11).
 7. **Enumeration** → `api_method_total` = 16643 operations, counted from the official
    `microsoftgraph/msgraph-metadata` OpenAPI (`openapi/v1.0/openapi.yaml`,
    `grep -c 'operationId:'`, fetched 2026-07-18).
-8. **coverage-waiver**: shipping the delegated read-only mail/calendar/identity surface
-   first (5 wrapped operations of 16643 enumerated — Microsoft Graph spans every M365
-   workload and full coverage is neither feasible nor desirable for a hand-ergonomic CLI).
-   The `api <METHOD> <PATH>` escape hatch reaches the remaining endpoints; write surfaces
-   (Mail.Send, event create) are deferred to v2 by design.
+8. **coverage-waiver**: shipping the delegated mail/calendar/identity surface (v2: 10
+   wrapped operations of 16643 enumerated — Microsoft Graph spans every M365 workload and
+   full coverage is neither feasible nor desirable for a hand-ergonomic CLI). The
+   `api <METHOD> <PATH>` escape hatch reaches the remaining endpoints. v1 shipped the 5
+   read operations; v2 added the write surface (sendMail, reply/replyAll, event
+   create/update/delete).
 9. **Pagination** → `@odata.nextLink` auto-follow with `--all`/`--limit`, hard page cap 50,
    and a same-host guard (never follow a nextLink off the configured Graph host — a
    malicious/poisoned response must not exfiltrate the bearer token).
@@ -76,3 +77,24 @@ never silently re-decide (cliwright GOAL.md §11).
 17. **Keyring size limits** → Windows Credential Manager caps blobs (~2.5 KB) below a
     typical MSAL cache; `auth.Store.Set` transparently falls back to the encrypted file when
     the keyring write fails, so login still works there.
+18. **v2 write surface — per-account opt-in scopes** → `mail send`/`mail reply` (Mail.Send)
+    and `calendar create/update/delete` (Calendars.ReadWrite) ship WITHOUT touching
+    `auth.DefaultScopes` — the default sign-in stays read-only (least privilege; a user who
+    never writes never holds a write-capable token). Write scopes are granted per account
+    via `auth login -a <name> --scopes <scope>`. The client pre-checks the CACHED grant in
+    the TokenFunc and fails with the exact re-login command
+    (`run: ms365 auth login -a <account> --scopes Mail.Send`); the check is fail-open when
+    the provider surfaces no scope metadata (Graph still enforces server-side), and it
+    never runs under `--dry-run` (the TokenFunc isn't invoked), so dry-run works unsigned.
+19. **Write classification** → `mail send` and `calendar delete` are DESTRUCTIVE
+    (irreversible: no unsend; cancellation notifies attendees) — MCP `destructiveHint`,
+    hard-blocked by `agent guard`. `mail reply` and `calendar create/update` are ordinary
+    WRITES (approval-gated): reply is scoped to an existing thread's recipients, and
+    create/update are correctable. POST/PATCH never auto-retry (idempotent-only retry
+    policy, #12) so a throttled send cannot duplicate.
+20. **Event datetimes** → `--from`/`--to` on `calendar create/update` are WALL-CLOCK times
+    paired with the `--timezone` flag (default UTC) into Graph's `dateTimeTimeZone` — no
+    client-side offset math; Exchange resolves DST from the zone name. `--online-meeting`
+    sets `isOnlineMeeting` AND `onlineMeetingProvider: teamsForBusiness` (Graph provisions
+    no Teams link from the flag alone). PATCH sends ONLY the flags the user passed
+    (cobra `Changed`); `--attendee` on update replaces the whole attendee list.

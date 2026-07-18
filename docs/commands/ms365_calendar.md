@@ -30,6 +30,9 @@ Read your Outlook calendar (Calendars.Read)
 ### SEE ALSO
 
 * [ms365](ms365.md)	 - A fast, scriptable CLI for Microsoft 365 (Microsoft Graph)
+* [ms365 calendar create](ms365_calendar_create.md)	 - Create a calendar event (Calendars.ReadWrite)
+* [ms365 calendar delete](ms365_calendar_delete.md)	 - Delete a calendar event (Calendars.ReadWrite)
 * [ms365 calendar events](ms365_calendar_events.md)	 - Show calendar events in a time window (recurring events expanded)
 * [ms365 calendar list](ms365_calendar_list.md)	 - List event masters (/me/events)
+* [ms365 calendar update](ms365_calendar_update.md)	 - Update a calendar event (Calendars.ReadWrite)
 

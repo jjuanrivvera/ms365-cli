@@ -5,12 +5,12 @@ Generate agent-safety config that blocks destructive ms365 operations
 ### Synopsis
 
 Classify every API command (read / write / irreversible) from the live command tree
-and emit host safety config: irreversible operations are hard-blocked, ordinary
-writes require approval, and reads are allowed. The shipped ms365 surface is
-read-only, so today the rails mainly gate the raw "api" escape hatch and "alias
-set" — but the guard derives from the LIVE tree, so any future write/destructive
-command is covered automatically. Cobra alias paths are covered too — "cal events"
-hits the same rails as "calendar events".
+and emit host safety config: irreversible operations ("mail send" — no unsend —
+and "calendar delete") are hard-blocked, ordinary writes ("mail reply",
+"calendar create/update") require approval, and reads are allowed. The guard
+derives from the LIVE tree, so any future write/destructive command is covered
+automatically. Cobra alias paths are covered too — "cal delete" hits the same
+rails as "calendar delete".
 
 For claude-code the output also includes a PreToolUse hook script
 (.claude/hooks/ms365-guard.sh): it strips quote/backslash obfuscation, matches blocked
