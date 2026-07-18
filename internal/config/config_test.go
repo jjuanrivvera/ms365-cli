@@ -14,7 +14,7 @@ func TestConfig_SaveLoadRoundTrip(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "config.yaml")
 	c, err := LoadFrom(p)
 	require.NoError(t, err)
-	require.NoError(t, c.SetProfile("prod", Profile{BaseURL: "https://soporte.example.com", AccountID: "1", Email: "me@example.com", Rps: 2.5}))
+	require.NoError(t, c.SetProfile("prod", Profile{BaseURL: "https://graph.microsoft.us", Username: "me@example.com", TenantID: "t-1", Timezone: "America/Caracas"}))
 	c.CurrentProfile = "prod"
 	require.NoError(t, c.Save())
 
@@ -30,8 +30,9 @@ func TestConfig_SaveLoadRoundTrip(t *testing.T) {
 	assert.Equal(t, "prod", got.CurrentProfile)
 	pr, ok := got.Profile("prod")
 	require.True(t, ok)
-	assert.Equal(t, "1", pr.AccountID)
-	assert.Equal(t, 2.5, pr.Rps)
+	assert.Equal(t, "me@example.com", pr.Username)
+	assert.Equal(t, "t-1", pr.TenantID)
+	assert.Equal(t, "America/Caracas", pr.Timezone)
 	assert.Equal(t, []string{"prod"}, got.ProfileNames())
 }
 
@@ -43,16 +44,16 @@ func TestConfig_LoadMissingIsEmpty(t *testing.T) {
 
 func TestResolveProfileName_Precedence(t *testing.T) {
 	c := &Config{CurrentProfile: "fromfile"}
-	t.Setenv("MS365_PROFILE", "")
+	t.Setenv("MS365_ACCOUNT", "")
 	assert.Equal(t, "flag", c.ResolveProfileName("flag"))
 	assert.Equal(t, "fromfile", c.ResolveProfileName(""))
 
-	t.Setenv("MS365_PROFILE", "fromenv")
+	t.Setenv("MS365_ACCOUNT", "fromenv")
 	assert.Equal(t, "fromenv", c.ResolveProfileName(""))
 	assert.Equal(t, "flag", c.ResolveProfileName("flag"), "flag still wins over env")
 
 	empty := &Config{}
-	t.Setenv("MS365_PROFILE", "")
+	t.Setenv("MS365_ACCOUNT", "")
 	assert.Equal(t, DefaultProfile, empty.ResolveProfileName(""))
 }
 
@@ -110,7 +111,7 @@ func TestLoad_UsesXDG(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotEmpty(t, c.FilePath())
 	// Save then reload through the public Load path.
-	require.NoError(t, c.SetProfile("p", Profile{AccountID: "9"}))
+	require.NoError(t, c.SetProfile("p", Profile{Username: "x@y.z"}))
 	require.NoError(t, c.Save())
 	again, err := Load()
 	require.NoError(t, err)

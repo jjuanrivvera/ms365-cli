@@ -56,10 +56,10 @@ func TestRender_YAML(t *testing.T) {
 }
 
 func TestRender_CSV(t *testing.T) {
-	out, _ := render(t, `[{"title":"a","description":"d1"},{"title":"b","description":"d2"}]`,
+	out, _ := render(t, `[{"subject":"a","description":"d1"},{"subject":"b","description":"d2"}]`,
 		Options{Format: FormatCSV})
 	lines := strings.Split(strings.TrimSpace(out), "\n")
-	assert.Equal(t, "title,description", lines[0])
+	assert.Equal(t, "subject,description", lines[0])
 	assert.Equal(t, "a,d1", lines[1])
 }
 
