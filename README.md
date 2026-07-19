@@ -1,4 +1,21 @@
-# ms365 — Microsoft 365 from your terminal
+<div align="center">
+
+# ms365
+
+[![CI](https://github.com/jjuanrivvera/ms365-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jjuanrivvera/ms365-cli/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/jjuanrivvera/ms365-cli)](https://github.com/jjuanrivvera/ms365-cli/releases/latest)
+[![Coverage](https://img.shields.io/badge/coverage-%E2%89%A580%25-brightgreen)](https://github.com/jjuanrivvera/ms365-cli/actions/workflows/ci.yml)
+[![Go Reference](https://pkg.go.dev/badge/github.com/jjuanrivvera/ms365-cli.svg)](https://pkg.go.dev/github.com/jjuanrivvera/ms365-cli)
+[![Go version](https://img.shields.io/github/go-mod/go-version/jjuanrivvera/ms365-cli)](go.mod)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/jjuanrivvera/ms365-cli)
+[![Built with cliwright](https://img.shields.io/badge/built_with-cliwright-1f6feb)](https://cliwright.jjuanrivvera.com)
+
+**Microsoft 365 from your terminal — Outlook mail, calendar, and profile via Microsoft Graph, with multi-account device-code auth.**
+
+[Documentation](https://jjuanrivvera.github.io/ms365-cli/) · [Command reference](https://jjuanrivvera.github.io/ms365-cli/commands/ms365/)
+
+</div>
 
 A fast, scriptable CLI for **Microsoft 365** via the **Microsoft Graph API**: read and
 send Outlook mail, manage your calendar, and inspect your profile — with named accounts so
