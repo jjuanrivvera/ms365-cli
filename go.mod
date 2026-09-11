@@ -1,8 +1,7 @@
 module github.com/jjuanrivvera/ms365-cli
 
-go 1.25.5
+go 1.26.8
 
-toolchain go1.25.12
 
 require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.7.2
