@@ -1,6 +1,6 @@
 module github.com/jjuanrivvera/ms365-cli
 
-go 1.26.8
+go 1.26.9
 
 
 require (
