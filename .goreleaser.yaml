@@ -66,8 +66,8 @@ homebrew_casks:
     homepage: https://github.com/jjuanrivvera/ms365-cli
     hooks:
       post:
-        install: |
-          system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ms365"]
+        install_steps: |
+          run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ .StagedPath }}/ms365"]
 
 scoops:
   - repository: { owner: jjuanrivvera, name: scoop-ms365-cli, token: "{{ .Env.HOMEBREW_TAP_TOKEN }}" }   # bucket repo must already exist; cross-repo token
